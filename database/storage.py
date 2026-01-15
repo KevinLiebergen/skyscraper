@@ -1,3 +1,4 @@
+import os
 import sqlite3
 import logging
 from datetime import datetime
@@ -5,8 +6,15 @@ from datetime import datetime
 logger = logging.getLogger("skyscraper.database")
 
 class DatabaseManager:
-    def __init__(self, db_path="skyscraper.db"):
-        self.db_path = db_path
+    def __init__(self, db_path=None):
+        if db_path is None:
+            # Default to data/skyscraper.db relative to CWD
+            self.db_path = os.path.join("data", "skyscraper.db")
+        else:
+            self.db_path = db_path
+            
+        # Ensure directory exists
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_db()
 
     def _get_conn(self):
