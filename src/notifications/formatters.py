@@ -35,11 +35,15 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
              
         if layover:
             body += f"   ⏳ Layover: {layover}\n"
+            
+        flight_url = flight.get('flight_url')
+        if flight_url:
+             body += f"   🔗 [Select Flight]({flight_url})\n"
         
         body += "\n"
 
     footer = ""
     if search_url:
-        footer = f"🔗 [View on Google Flights]({search_url})"
+        footer = f"🔗 [View All Results]({search_url})"
 
     return header + body + footer

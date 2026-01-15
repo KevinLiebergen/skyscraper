@@ -94,13 +94,29 @@ class GoogleFlightsScraper(FlightPlatform):
             # Layover: .BbR8Ec .sSHqwe
 
             flights_found = []
-            flight_cards = self.driver.find_elements(By.CSS_SELECTOR, "li.pIav2d")
             
             # Limit to top 5 cheapest/best options to avoid spam
-            for card in flight_cards[:5]:
+            # We need to collect data and then click to get the specific URL for each.
+            # Since clicking changes state/page, we must re-query the DOM or handling navigation carefully.
+            
+            # Robust Strategy:
+            # 1. Capture base search URL (with tfs) to return to.
+            base_search_url = self.driver.current_url
+            
+            # 2. Iterate by index to handle stale elements
+            num_cards = 5
+            
+            for i in range(num_cards):
                 try:
+                    # Re-find cards on each iteration as page might have refreshed/changed
+                    cards = self.driver.find_elements(By.CSS_SELECTOR, "li.pIav2d")
+                    if i >= len(cards):
+                        break
+                        
+                    card = cards[i]
                     data = {}
                     
+                    # --- Extract Data (Same as before) ---
                     # Price
                     try:
                         price_el = card.find_element(By.CSS_SELECTOR, ".FpEdX span")
@@ -159,17 +175,46 @@ class GoogleFlightsScraper(FlightPlatform):
                     except:
                         data['layover'] = None
 
+                    # --- Click to get Deep Link ---
+                    try:
+                        # Click the card to select flight
+                        # Usually clicking the card body works.
+                        card.click()
+                        
+                        # Wait for URL update
+                        self.browser.random_sleep(2, 3)
+                        
+                        # Capture specific URL
+                        data['flight_url'] = self.driver.current_url
+                        
+                        # Navigate back to list
+                        # self.driver.back() is risky if history is weird.
+                        # Re-loading base_url is safer but slower.
+                        self.driver.get(base_search_url)
+                        self.browser.random_sleep(2, 3)
+                        
+                    except Exception as nav_e:
+                        logger.warning(f"Failed to capture URL for flight {i+1}: {nav_e}")
+                        data['flight_url'] = base_search_url # Fallback
+                        # Ensure we are back on list
+                        if self.driver.current_url != base_search_url:
+                             self.driver.get(base_search_url)
+                             self.browser.random_sleep(2, 3)
+
                     flights_found.append(data)
                     
                 except Exception as e:
-                    logger.warning(f"Failed to parse a flight card: {e}")
+                    logger.warning(f"Failed to parse flight card {i}: {e}")
+                    # Try to reset state
+                    try:
+                        self.driver.get(base_search_url)
+                        self.browser.random_sleep(2, 3)
+                    except:
+                        pass
                     continue
 
-            # Capture the exact URL with the search state (tfs parameter)
-            # This ensures the link opens the exact same results we Scraped.
-            final_url = self.driver.current_url
-            
-            return flights_found, final_url
+            # Return list and the base search URL (as fallback/footer)
+            return flights_found, base_search_url
             
         except Exception as e:
             logger.error(f"Error during scraping: {e}")
