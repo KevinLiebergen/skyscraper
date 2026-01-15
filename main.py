@@ -48,7 +48,7 @@ def main():
         scraper = GoogleFlightsScraper(browser)
 
         # 6. Scrape
-        results = scraper.search_flights(origin_code, dest_code, args.date, args.return_date)
+        results, search_url = scraper.search_flights(origin_code, dest_code, args.date, args.return_date)
 
         # 7. Filter, Deduplicate & Notify
         if results:
@@ -83,7 +83,7 @@ def main():
 
             # C. Notify
             if new_results:
-                message = format_flight_results(new_results, args.origin, args.destination, args.date, args.return_date)
+                message = format_flight_results(new_results, args.origin, args.destination, args.date, args.return_date, search_url)
                 
                 notifier = TelegramNotifier()
                 notifier.send_message(message)
