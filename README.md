@@ -1,6 +1,6 @@
 # Skyscraper - Flight Scraper
 
-Skyscraper is a modular, Python-based flight scraper designed to search for flight prices on platforms like Google Flights and notify users via Telegram. It emphasizes strict adherence to the Single Responsibility Principle (SRP) and Low Coupling.
+Skyscraper is a Python-based flight scraper designed to search for flight prices on platforms like Google Flights and notify users via Telegram.
 
 ## Features
 
@@ -24,22 +24,21 @@ Skyscraper is a modular, Python-based flight scraper designed to search for flig
 2. **Create the Conda Environment**:
 
    ```bash
-   conda create -n skyscraper python=3.10 -y
-   conda activate skyscraper
+   conda env create -f environment.yml
    ```
 
-3. **Install Dependencies**:
+3. **Activate Environment**:
    ```bash
-   pip install -r requirements.txt
+   conda activate skyscraper
    ```
 
 ## Configuration
 
 1. **Environment Variables**:
-   Copy the example environment file:
+   Create a `.env` file (see `.env.example` if available, or create one):
 
    ```bash
-   cp .env.example .env
+   touch .env
    ```
 
 2. **Edit `.env`**:
@@ -54,20 +53,21 @@ Skyscraper is a modular, Python-based flight scraper designed to search for flig
 Run the scraper using the `main.py` entry point. You must provide the origin, destination, and date.
 
 ```bash
-python main.py --origin LON --destination NYC --date 2026-02-01
+python main.py --origin London --destination "New York" --date 2026-02-01
 ```
 
 ### Arguments
 
-- `--origin`: 3-letter airport code (e.g., LON, NYC, PAR).
-- `--destination`: 3-letter airport code.
+- `--origin`: City name or 3-letter IATA code (e.g., "London", "LON").
+- `--destination`: City name or 3-letter IATA code (e.g., "New York", "NYC").
 - `--date`: Date of travel in YYYY-MM-DD format.
+- `--return-date`: (Optional) Return date in YYYY-MM-DD format for round trips.
 - `--headless`: (Optional) Run the browser in headless mode (no GUI).
 
-### Example with Headless Mode
+### Example with Return Date and Headless Mode
 
 ```bash
-python main.py --origin LON --destination NYC --date 2026-02-01 --headless
+python main.py --origin London --destination "New York" --date 2026-02-01 --return-date 2026-02-15 --headless
 ```
 
 ## Project Structure
@@ -77,11 +77,15 @@ skyscraper/
 ├── config/             # Configuration loader
 ├── logger/             # Logging setup
 ├── notifications/      # Notification services (Telegram)
+│   ├── formatters.py   # Message formatting
+│   └── telegram.py     # Telegram API integration
 ├── scraper/            # Scraper engine
 │   ├── platforms/      # Flight platform implementations (Google Flights, etc.)
 │   └── browser.py      # Browser automation manager
+├── utils/              # Utility helper functions
+│   └── locations.py    # City to IATA code conversion
 ├── main.py             # CLI Entry point
-├── requirements.txt    # Project dependencies
+├── environment.yml     # Conda environment definition
 └── .env                # Secrets (GitIgnored)
 ```
 

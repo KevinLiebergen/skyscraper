@@ -1,0 +1,13 @@
+name: skyscraper
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.10
+  - selenium
+  - python-dotenv
+  - requests
+  - pip
+  - pip:
+      - webdriver-manager
+      - airportsdata
