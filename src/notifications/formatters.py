@@ -1,12 +1,25 @@
+from datetime import datetime
+
 def format_flight_results(results: list, origin: str, destination: str, date: str, return_date: str = None, search_url: str = None) -> str:
     """
     Formats flight search results into a rich Telegram message.
     """
+    
+    def format_date_with_day(date_str):
+        try:
+            dt = datetime.strptime(date_str, "%Y-%m-%d")
+            return f"{date_str} ({dt.strftime('%A')})"
+        except ValueError:
+            return date_str
+
+    formatted_date = format_date_with_day(date)
+    
     header = f"✈️ *Flight Search Results* ✈️\n"
     header += f"🌍 {origin.title()} ➡️ {destination.title()}\n"
-    header += f"📅 {date}"
+    header += f"📅 {formatted_date}"
     if return_date:
-        header += f" 🔄 {return_date}"
+        formatted_return = format_date_with_day(return_date)
+        header += f" 🔄 {formatted_return}"
     header += "\n\n"
     
     body = ""
