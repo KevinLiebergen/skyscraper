@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--destination", required=True, help="Flight destination (e.g., NYC)")
     parser.add_argument("--date", required=True, help="Flight date (YYYY-MM-DD)")
     parser.add_argument("--return-date", help="Return flight date (YYYY-MM-DD). If omitted, searches one-way.")
+    parser.add_argument("--max-price", type=float, help="Maximum price filter (e.g., 500)")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode")
 
     args = parser.parse_args()
@@ -43,17 +44,56 @@ def main():
         # 6. Scrape
         results = scraper.search_flights(origin_code, dest_code, args.date, args.return_date)
 
-        # 7. Notify
+        # 7. Filter, Deduplicate & Notify
         if results:
-            message = format_flight_results(results, args.origin, args.destination, args.date, args.return_date)
+            # A. Max Price Filtering
+            if args.max_price:
+                from utils.parsing import parse_price
+                filtered_results = []
+                for flight in results:
+                    price_val = parse_price(flight.get('price'))
+                    if price_val is not None and price_val <= args.max_price:
+                        filtered_results.append(flight)
+                    else:
+                        logger.debug(f"Filtered out flight with price {flight.get('price')}")
+                
+                logger.info(f"Filtered results: {len(filtered_results)} of {len(results)} kept (Max Price: {args.max_price})")
+                results = filtered_results
+
+            # B. Deduplication (Database Check)
+            from database.storage import DatabaseManager
+            db = DatabaseManager()
             
-            notifier = TelegramNotifier()
-            notifier.send_message(message)
+            new_results = []
+            for flight in results:
+                if db.is_flight_new(flight, args.origin, args.destination, args.date, args.return_date):
+                    new_results.append(flight)
+                    # We save it immediately so next run knows about it.
+                    # Or we could save batch after success. Saving here is safer against crashes.
+                    db.save_flight(flight, args.origin, args.destination, args.date, args.return_date)
+            
+            if len(new_results) < len(results):
+                logger.info(f"Suppressed {len(results) - len(new_results)} duplicate notifications.")
+
+            # C. Notify
+            if new_results:
+                message = format_flight_results(new_results, args.origin, args.destination, args.date, args.return_date)
+                
+                notifier = TelegramNotifier()
+                notifier.send_message(message)
+            else:
+                 logger.info("No new flights found (all duplicates or filtered).")
         else:
             logger.info("No results found or scraping failed.")
 
     except Exception as e:
+        error_msg = f"🚨 *Skyscraper Error* 🚨\n\nAn unexpected error occurred:\n`{str(e)}`"
         logger.error(f"An unexpected error occurred: {e}", exc_info=True)
+        try:
+            notifier = TelegramNotifier()
+            notifier.send_message(error_msg)
+        except Exception as notification_error:
+            logger.error(f"Failed to send error notification: {notification_error}")
     finally:
         # 7. Cleanup
         browser.close()
