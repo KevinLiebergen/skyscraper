@@ -71,9 +71,11 @@ class GoogleFlightsScraper(FlightPlatform):
             
             # I'll stick to URL manipulation as it's the professional way to scrape if possible.
             # Correct URL construction
-            query = f"Flights from {origin} to {destination} on {date}"
+            # Using IATA codes directly is robust: "LON to NYC on 2026-02-01"
             if return_date:
-                query += f" returning on {return_date}"
+                query = f"{origin} to {destination} on {date} returning on {return_date}"
+            else:
+                query = f"{origin} to {destination} on {date} one way"
             
             search_url = f"https://www.google.com/travel/flights?q={query.replace(' ', '+')}"
             self.browser.get_page(search_url)
