@@ -14,12 +14,16 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
         price = flight.get('price', 'N/A')
         airline = flight.get('airline', 'Unknown')
         duration = flight.get('duration', 'N/A')
+        departure = flight.get('departure_time', 'N/A')
+        arrival = flight.get('arrival_time', 'N/A')
         stops = flight.get('stops', 'N/A')
         layover = flight.get('layover')
         
         body += f"🔹 *Option {i}*\n"
         body += f"   💰 Price: {price}\n"
         body += f"   🏢 Airline: {airline}\n"
+        body += f"   🛫 Depart: {departure}\n"
+        body += f"   🛬 Arrive: {arrival}\n"
         body += f"   ⏱️ Duration: {duration}\n"
         
         if stops and ("Nonstop" in stops or "0" in stops):

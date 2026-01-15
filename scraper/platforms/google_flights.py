@@ -122,7 +122,24 @@ class GoogleFlightsScraper(FlightPlatform):
                         data['duration'] = duration_el.text
                     except:
                         data['duration'] = "N/A"
-                        
+                    
+                    # Departure and Arrival Times
+                    try:
+                        # Selector based on inspection: .YMlIz inside the card usually holds the times
+                        # It might contain spans with role="text"
+                        times_el = card.find_element(By.CSS_SELECTOR, ".YMlIz")
+                        times_text = times_el.text # e.g. "10:00 AM – 2:00 PM"
+                        if "–" in times_text:
+                            dep, arr = times_text.split("–", 1)
+                            data['departure_time'] = dep.strip()
+                            data['arrival_time'] = arr.strip()
+                        else:
+                            data['departure_time'] = times_text
+                            data['arrival_time'] = "?"
+                    except:
+                        data['departure_time'] = "N/A"
+                        data['arrival_time'] = "N/A"
+
                     # Stops
                     try:
                         stops_el = card.find_element(By.CSS_SELECTOR, ".EfT7Ae span")
