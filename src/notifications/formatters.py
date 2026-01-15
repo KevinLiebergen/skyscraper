@@ -38,12 +38,8 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
             
         flight_url = flight.get('flight_url')
         if flight_url:
-             body += f"   🔗 [Select Flight]({flight_url})\n"
+             body += f"   🔗 [Select Returning Flight]({flight_url})\n"
         
         body += "\n"
 
-    footer = ""
-    if search_url:
-        footer = f"🔗 [View All Results]({search_url})"
-
-    return header + body + footer
+    return header + body
