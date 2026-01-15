@@ -20,7 +20,9 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
         layover = flight.get('layover')
         
         body += f"🔹 *Option {i}*\n"
-        body += f"   💰 Price: {price}\n"
+        if return_date:
+            body += f"   🛫 *Outbound Flight*\n"
+        body += f"   💰 {'Total Price (Round Trip)' if return_date else 'Price'}: {price}\n"
         body += f"   🏢 Airline: {airline}\n"
         body += f"   🛫 Depart: {departure}\n"
         body += f"   🛬 Arrive: {arrival}\n"
