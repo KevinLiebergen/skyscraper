@@ -70,6 +70,29 @@ python main.py --origin London --destination "New York" --date 2026-02-01
 python main.py --origin London --destination "New York" --date 2026-02-01 --return-date 2026-02-15 --headless
 ```
 
+## Automation (Crontab)
+
+To run the scraper automatically on a schedule (e.g., every 6 hours), you can use `cron`.
+
+1.  Open your crontab editor:
+
+    ```bash
+    crontab -e
+    ```
+
+2.  Add a line to schedule the script. The following example runs every 6 hours and logs output to `cron.log`:
+
+    ```bash
+    # Run every 6 hours (00:00, 06:00, 12:00, 18:00)
+    0 */6 * * * cd /home/kevinvanliebergen/git/skyscraper && /opt/conda/envs/skyscraper/bin/python main.py --origin London --destination "New York" --date 2026-02-01 --return-date 2026-02-15 --headless --max-price 600 >> cron.log 2>&1
+    ```
+
+    **Important Notes:**
+
+    - **Absolute Paths**: Always use absolute paths for both `cd` and the `python` executable.
+    - **Python Executable**: Use the python executable from your conda environment. You can find it by running `conda run -n skyscraper which python`.
+    - **Display**: Since it runs headless, you generally don't need to set `DISPLAY`, but if you face issues, ensure `--headless` is used.
+
 ## Project Structure
 
 ```
