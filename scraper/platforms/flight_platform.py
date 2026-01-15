@@ -9,7 +9,7 @@ class FlightPlatform(ABC):
         self.driver = browser_manager.get_driver()
 
     @abstractmethod
-    def search_flights(self, origin, destination, date):
+    def search_flights(self, origin, destination, date, return_date=None):
         """
         Abstract method to search for flights.
         Should return a list of results or a formatted string.
