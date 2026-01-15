@@ -1,5 +1,11 @@
 import argparse
 import logging
+import sys
+import os
+
+# Add src/ directory to the path so modules can be found
+sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+
 from config.settings import TELEGRAM_TOKEN
 from logger.setup import setup_logger
 from scraper.browser import BrowserManager
