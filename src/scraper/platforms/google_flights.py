@@ -165,7 +165,11 @@ class GoogleFlightsScraper(FlightPlatform):
                     logger.warning(f"Failed to parse a flight card: {e}")
                     continue
 
-            return flights_found, search_url
+            # Capture the exact URL with the search state (tfs parameter)
+            # This ensures the link opens the exact same results we Scraped.
+            final_url = self.driver.current_url
+            
+            return flights_found, final_url
             
         except Exception as e:
             logger.error(f"Error during scraping: {e}")
