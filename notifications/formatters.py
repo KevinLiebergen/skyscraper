@@ -1,0 +1,35 @@
+def format_flight_results(results: list, origin: str, destination: str, date: str, return_date: str = None) -> str:
+    """
+    Formats flight search results into a rich Telegram message.
+    """
+    header = f"✈️ *Flight Search Results* ✈️\n"
+    header += f"🌍 {origin} ➡️ {destination}\n"
+    header += f"📅 {date}"
+    if return_date:
+        header += f" 🔄 {return_date}"
+    header += "\n\n"
+    
+    body = ""
+    for i, flight in enumerate(results, 1):
+        price = flight.get('price', 'N/A')
+        airline = flight.get('airline', 'Unknown')
+        duration = flight.get('duration', 'N/A')
+        stops = flight.get('stops', 'N/A')
+        layover = flight.get('layover')
+        
+        body += f"🔹 *Option {i}*\n"
+        body += f"   💰 Price: {price}\n"
+        body += f"   🏢 Airline: {airline}\n"
+        body += f"   ⏱️ Duration: {duration}\n"
+        
+        if stops and ("Nonstop" in stops or "0" in stops):
+             body += f"   🚀 Stops: Nonstop\n"
+        else:
+             body += f"   🛑 Stops: {stops}\n"
+             
+        if layover:
+            body += f"   ⏳ Layover: {layover}\n"
+        
+        body += "\n"
+
+    return header + body
