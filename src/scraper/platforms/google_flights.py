@@ -129,12 +129,15 @@ class GoogleFlightsScraper(FlightPlatform):
                         # It might contain spans with role="text"
                         times_el = card.find_element(By.CSS_SELECTOR, ".YMlIz")
                         times_text = times_el.text # e.g. "10:00 AM – 2:00 PM"
+                        
+                        from utils.parsing import convert_to_24h
+                        
                         if "–" in times_text:
                             dep, arr = times_text.split("–", 1)
-                            data['departure_time'] = dep.strip()
-                            data['arrival_time'] = arr.strip()
+                            data['departure_time'] = convert_to_24h(dep)
+                            data['arrival_time'] = convert_to_24h(arr)
                         else:
-                            data['departure_time'] = times_text
+                            data['departure_time'] = convert_to_24h(times_text)
                             data['arrival_time'] = "?"
                     except:
                         data['departure_time'] = "N/A"
