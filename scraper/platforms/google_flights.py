@@ -7,7 +7,7 @@ from .flight_platform import FlightPlatform
 logger = logging.getLogger("skyscraper.platforms.google")
 
 class GoogleFlightsScraper(FlightPlatform):
-    def search_flights(self, origin, destination, date):
+    def search_flights(self, origin, destination, date, return_date=None):
         """
         Searches Google Flights.
         Note: Selectors are clear as of 2024 but subject to change.
@@ -54,7 +54,7 @@ class GoogleFlightsScraper(FlightPlatform):
             
             # Wait, let's look for known placeholders or ARIA labels.
             # 'Where from?' box
-            logger.info(f"Searching flights from {origin} to {destination} on {date}")
+            logger.info(f"Searching flights from {origin} to {destination} on {date} (Return: {return_date})")
             
             # This is a demonstration. Real scraping requires maintenance.
             logger.warning("Unstable selectors warning: interacting with Google Flights is complex.")
@@ -70,17 +70,80 @@ class GoogleFlightsScraper(FlightPlatform):
             # But the prompt said "enter to flight platforms, search with the parameters".
             
             # I'll stick to URL manipulation as it's the professional way to scrape if possible.
-            search_url = f"https://www.google.com/travel/flights?q=Flights+from+{origin}+to+{destination}+on+{date}"
+            # Correct URL construction
+            query = f"Flights from {origin} to {destination} on {date}"
+            if return_date:
+                query += f" returning on {return_date}"
+            
+            search_url = f"https://www.google.com/travel/flights?q={query.replace(' ', '+')}"
             self.browser.get_page(search_url)
             
-            # Now wait for results
-            self.browser.random_sleep(3, 6)
+            # Wait for results to load
+            logger.info("Waiting for results to load...")
+            self.browser.random_sleep(3, 5)
             
             # Extract results
-            # Results are usually in a list.
-            results = self.driver.find_elements(By.XPATH, "//li[contains(@class, 'pIav2d')]") # Example class, likely wrong
-            # Better: Search by text price
-            return [f"Checked flights for {origin}->{destination} on {date}. (Mock extraction)"]
+            # Selectors found:
+            # Card: li.pIav2d
+            # Price: .FpEdX span
+            # Airline: .sSHqwe.tPgKwe.ogfYpf span (first one)
+            # Duration: .gvkrdb
+            # Stops: .EfT7Ae span
+            # Layover: .BbR8Ec .sSHqwe
+
+            flights_found = []
+            flight_cards = self.driver.find_elements(By.CSS_SELECTOR, "li.pIav2d")
+            
+            # Limit to top 5 cheapest/best options to avoid spam
+            for card in flight_cards[:5]:
+                try:
+                    data = {}
+                    
+                    # Price
+                    try:
+                        price_el = card.find_element(By.CSS_SELECTOR, ".FpEdX span")
+                        data['price'] = price_el.text
+                    except:
+                        data['price'] = "N/A"
+                        
+                    # Airline
+                    try:
+                        airline_el = card.find_elements(By.CSS_SELECTOR, ".sSHqwe.tPgKwe.ogfYpf span")
+                        if airline_el:
+                            data['airline'] = airline_el[0].text
+                        else:
+                            data['airline'] = "Unknown Airline"
+                    except:
+                         data['airline'] = "Unknown Airline"
+
+                    # Duration
+                    try:
+                        duration_el = card.find_element(By.CSS_SELECTOR, ".gvkrdb")
+                        data['duration'] = duration_el.text
+                    except:
+                        data['duration'] = "N/A"
+                        
+                    # Stops
+                    try:
+                        stops_el = card.find_element(By.CSS_SELECTOR, ".EfT7Ae span")
+                        data['stops'] = stops_el.text
+                    except:
+                        data['stops'] = "N/A"
+                        
+                    # Layover (if any)
+                    try:
+                         layover_el = card.find_element(By.CSS_SELECTOR, ".BbR8Ec .sSHqwe")
+                         data['layover'] = layover_el.text
+                    except:
+                        data['layover'] = None
+
+                    flights_found.append(data)
+                    
+                except Exception as e:
+                    logger.warning(f"Failed to parse a flight card: {e}")
+                    continue
+
+            return flights_found
             
         except Exception as e:
             logger.error(f"Error during scraping: {e}")
