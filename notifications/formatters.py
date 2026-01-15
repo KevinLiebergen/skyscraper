@@ -3,7 +3,7 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
     Formats flight search results into a rich Telegram message.
     """
     header = f"✈️ *Flight Search Results* ✈️\n"
-    header += f"🌍 {origin} ➡️ {destination}\n"
+    header += f"🌍 {origin.title()} ➡️ {destination.title()}\n"
     header += f"📅 {date}"
     if return_date:
         header += f" 🔄 {return_date}"
