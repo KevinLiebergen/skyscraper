@@ -163,9 +163,9 @@ class GoogleFlightsScraper(FlightPlatform):
                     logger.warning(f"Failed to parse a flight card: {e}")
                     continue
 
-            return flights_found
+            return flights_found, search_url
             
         except Exception as e:
             logger.error(f"Error during scraping: {e}")
-            return []
+            return [], None
 

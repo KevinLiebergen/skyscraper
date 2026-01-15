@@ -1,4 +1,4 @@
-def format_flight_results(results: list, origin: str, destination: str, date: str, return_date: str = None) -> str:
+def format_flight_results(results: list, origin: str, destination: str, date: str, return_date: str = None, search_url: str = None) -> str:
     """
     Formats flight search results into a rich Telegram message.
     """
@@ -38,4 +38,8 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
         
         body += "\n"
 
-    return header + body
+    footer = ""
+    if search_url:
+        footer = f"🔗 [View on Google Flights]({search_url})"
+
+    return header + body + footer
