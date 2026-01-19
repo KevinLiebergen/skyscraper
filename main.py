@@ -79,7 +79,7 @@ def main():
                     db.save_flight(flight, args.origin, args.destination, args.date, args.return_date)
             
             if len(new_results) < len(results):
-                logger.info(f"Suppressed {len(results) - len(new_results)} duplicate notifications.")
+                logger.info(f"Suppressed {len(results) - len(new_results)} duplicate or price-increased notifications.")
 
             # C. Notify
             if new_results:
