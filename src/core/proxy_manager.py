@@ -44,7 +44,7 @@ class ProxyManager:
                         logger.info(f"Generated {len(generated_proxies)} BrightData proxies for countries: {', '.join(countries)}")
                         return generated_proxies
                 else:
-                     logger.error("Invalid BrightData proxy format. Use http://user:pass@host:port")
+                     logger.error("Invalid BrightData proxy format. Use http://brd-customer-ID-zone-ZONE:PASSWORD@brd.superproxy.io:33335")
             except Exception as e:
                  logger.error(f"Failed to generate BrightData proxies: {e}")
 

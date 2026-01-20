@@ -70,11 +70,11 @@ Instead of a manual proxy list, you can use a BrightData base proxy and a list o
 
 ```bash
 python main.py --origin LON --destination NYC --date 2026-03-01 \
-  --brightdata-proxy "http://brd-customer-123-zone-static:pass@zproxy.lum-superproxy.io:22225" \
+  --brightdata-proxy "http://brd-customer-hl_c1c688f0-zone-YOUR_ZONE_NAME:YOUR_PASSWORD@brd.superproxy.io:33335" \
   --countries "us,uk,de,fr"
 ```
 
-The scraper will iterate through US, UK, Germany, and France, finding the best price across all of them.
+The scraper will iterate through US, UK, Germany, and France. Note that `YOUR_ZONE_NAME` should be replaced with your actual BrightData zone name (e.g., `static`, `residential`, etc.). The scraper appends `-country-XX` to this zone automatically.
 
 ### Example with Return Date and Headless Mode
 
