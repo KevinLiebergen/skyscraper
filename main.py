@@ -6,12 +6,11 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
 
 from logger.setup import setup_logger
-from scraper.browser import BrowserManager
-from scraper.platforms.google_flights import GoogleFlightsScraper
 from config.arguments import parse_arguments
 from core.flight_controller import FlightController
 from core.proxy_manager import ProxyManager
 from core.result_aggregator import ResultAggregator
+from core.scraper_runner import ScraperRunner
 from utils.locations import FlightLocationHandler
 from notifications.telegram import TelegramNotifier
 
@@ -39,31 +38,8 @@ def main():
         last_search_url = None
 
         # 5. Scrape with Proxies
-        for i, proxy in enumerate(proxies):
-            source_label = proxy_manager.get_source_label(proxy, args)
-            logger.info(f"--- Starting scrape with source: {source_label} ({i+1}/{len(proxies)}) ---")
-            
-            browser = None
-            try:
-                browser = BrowserManager(headless=args.headless, proxy=proxy)
-                scraper = GoogleFlightsScraper(browser)
-                results, search_url = scraper.search_flights(origin_code, dest_code, args.date, args.return_date)
-                
-                if search_url:
-                    last_search_url = search_url
-                
-                # Tag results with source
-                for res in results:
-                    res['source'] = source_label
-                    all_results.append(res)
-                    
-                logger.info(f"Found {len(results)} flights via {source_label}")
-
-            except Exception as e:
-                logger.error(f"Error scraping with proxy {source_label}: {e}")
-            finally:
-                if browser:
-                    browser.close()
+        runner = ScraperRunner(headless=args.headless)
+        all_results, last_search_url = runner.run_scrapers(proxies, args, origin_code, dest_code, proxy_manager)
 
         # 6. Process Results (Best Price Logic)
         if not all_results:
