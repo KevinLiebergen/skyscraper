@@ -10,6 +10,8 @@ from scraper.browser import BrowserManager
 from scraper.platforms.google_flights import GoogleFlightsScraper
 from config.arguments import parse_arguments
 from core.flight_controller import FlightController
+from core.proxy_manager import ProxyManager
+from core.result_aggregator import ResultAggregator
 from utils.locations import FlightLocationHandler
 from notifications.telegram import TelegramNotifier
 
@@ -21,8 +23,9 @@ def main():
     # 2. Parse Arguments
     args = parse_arguments()
 
-    # 3. Setup Browser
-    browser = BrowserManager(headless=args.headless)
+    # 3. Load Proxies
+    proxy_manager = ProxyManager()
+    proxies = proxy_manager.get_proxies(args)
     
     try:
         # 4. Resolve Locations
@@ -32,13 +35,47 @@ def main():
         
         logger.info(f"Resolved: {args.origin} -> {origin_code}, {args.destination} -> {dest_code}")
 
-        # 5. Scrape
-        scraper = GoogleFlightsScraper(browser)
-        results, search_url = scraper.search_flights(origin_code, dest_code, args.date, args.return_date)
+        all_results = []
+        last_search_url = None
 
-        # 6. Process Results
+        # 5. Scrape with Proxies
+        for i, proxy in enumerate(proxies):
+            source_label = proxy_manager.get_source_label(proxy, args)
+            logger.info(f"--- Starting scrape with source: {source_label} ({i+1}/{len(proxies)}) ---")
+            
+            browser = None
+            try:
+                browser = BrowserManager(headless=args.headless, proxy=proxy)
+                scraper = GoogleFlightsScraper(browser)
+                results, search_url = scraper.search_flights(origin_code, dest_code, args.date, args.return_date)
+                
+                if search_url:
+                    last_search_url = search_url
+                
+                # Tag results with source
+                for res in results:
+                    res['source'] = source_label
+                    all_results.append(res)
+                    
+                logger.info(f"Found {len(results)} flights via {source_label}")
+
+            except Exception as e:
+                logger.error(f"Error scraping with proxy {source_label}: {e}")
+            finally:
+                if browser:
+                    browser.close()
+
+        # 6. Process Results (Best Price Logic)
+        if not all_results:
+             logger.warning("No results found from any source.")
+             return
+
+        result_aggregator = ResultAggregator()
+        final_results = result_aggregator.consolidate_results(all_results)
+
+        # 7. Process Final Results
         controller = FlightController()
-        controller.process_results(results, args, search_url)
+        controller.process_results(final_results, args, last_search_url)
 
     except Exception as e:
         error_msg = f"🚨 *Skyscraper Error* 🚨\n\nAn unexpected error occurred:\n`{str(e)}`"
@@ -49,8 +86,6 @@ def main():
         except Exception as notification_error:
             logger.error(f"Failed to send error notification: {notification_error}")
     finally:
-        # 7. Cleanup
-        browser.close()
         logger.info("Finished.")
 
 if __name__ == "__main__":

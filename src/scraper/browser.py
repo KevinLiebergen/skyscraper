@@ -9,10 +9,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 logger = logging.getLogger("skyscraper.browser")
 
 class BrowserManager:
-    def __init__(self, headless=False):
-        self.driver = self._setup_driver(headless)
+    def __init__(self, headless=False, proxy=None):
+        self.driver = self._setup_driver(headless, proxy)
 
-    def _setup_driver(self, headless):
+    def _setup_driver(self, headless, proxy):
         options = Options()
         if headless:
             options.add_argument("--headless=new")
@@ -26,6 +26,10 @@ class BrowserManager:
         options.add_argument("--disable-blink-features=AutomationControlled")
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
+
+        if proxy:
+            logger.info(f"Setting up browser with proxy: {proxy}")
+            options.add_argument(f'--proxy-server={proxy}')
 
         service = Service(ChromeDriverManager().install())
         driver = webdriver.Chrome(service=service, options=options)

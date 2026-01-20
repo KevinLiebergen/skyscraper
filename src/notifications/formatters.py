@@ -54,6 +54,10 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
              link_text = "Select Returning Flight" if return_date else "Select Flight"
              body += f"   🔗 [{link_text}]({flight_url})\n"
         
+        source = flight.get('source')
+        if source:
+             body += f"   🌐 Found via: {source}\n"
+
         body += "\n"
 
     return header + body

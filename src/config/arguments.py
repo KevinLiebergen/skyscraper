@@ -12,5 +12,7 @@ def parse_arguments():
     parser.add_argument("--return-date", help="Return flight date (YYYY-MM-DD). If omitted, searches one-way.")
     parser.add_argument("--max-price", type=float, help="Maximum price filter (e.g., 500)")
     parser.add_argument("--headless", action="store_true", help="Run browser in headless mode")
+    parser.add_argument("--brightdata-proxy", help="BrightData base proxy URL (e.g., http://brd-customer-X-zone-Y:pass@host:port)")
+    parser.add_argument("--countries", help="Comma-separated list of country codes for BrightData (e.g., us,uk,de)")
 
     return parser.parse_args()

@@ -64,6 +64,18 @@ python main.py --origin London --destination "New York" --date 2026-02-01
 - `--return-date`: (Optional) Return date in YYYY-MM-DD format for round trips.
 - `--headless`: (Optional) Run the browser in headless mode (no GUI).
 
+### BrightData Integration (Dynamic Countries)
+
+Instead of a manual proxy list, you can use a BrightData base proxy and a list of countries. Skyscraper will automatically generate the correct proxy string for each country.
+
+```bash
+python main.py --origin LON --destination NYC --date 2026-03-01 \
+  --brightdata-proxy "http://brd-customer-123-zone-static:pass@zproxy.lum-superproxy.io:22225" \
+  --countries "us,uk,de,fr"
+```
+
+The scraper will iterate through US, UK, Germany, and France, finding the best price across all of them.
+
 ### Example with Return Date and Headless Mode
 
 ```bash
@@ -88,7 +100,6 @@ To run the scraper automatically on a schedule (e.g., every 6 hours), you can us
     ```
 
     **Important Notes:**
-
     - **Absolute Paths**: Always use absolute paths for `cd`.
     - **Conda Path**: Ensure `conda` is in your cron user's PATH, or use the full path to the conda executable (e.g., `/home/user/miniconda3/bin/conda`).
     - **Display**: Since it runs headless, you generally don't need to set `DISPLAY`, but if you face issues, ensure `--headless` is used.
