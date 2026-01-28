@@ -1,13 +1,14 @@
 # Skyscraper - Flight Scraper
 
-Skyscraper is a Python-based flight scraper designed to search for flight prices on platforms like Google Flights and notify users via Telegram.
+Skyscraper is a Python-based flight scraper designed to search for flight prices on Google Flights and notify users via Telegram. It supports both robust server-side scraping via **SerpApi** (recommended) and client-side browser automation with **ScraperAPI** fallback.
 
 ## Features
 
-- **Modular Design**: Separated concerns for Configuration, Logging, Notification, and Scraping.
-- **Human Simulation**: Uses Selenium with realistic user-agent headers, screen resolution, and random sleeps to mimic human behavior.
-- **Telegram Integration**: Sends text notifications directly to your device.
-- **CLI Interface**: Easy-to-use command-line arguments for flexibility.
+- **Reliable Scraping**: Uses **SerpApi** to fetch data directly from Google Flights without browser overhead or stability issues.
+- **Multi-Country Search**: Automatically checks flight prices from multiple regions (e.g., UK, US, ES) to find the best currency/regional deals.
+- **Source Deduplication**: Consolidates identical flights from different sources, showing all regions where the deal was found.
+- **Rich Notifications**: Sends Telegram messages with Duration, Stops, Airline, Price (in Euros), and direct links to results.
+- **Modular Architecture**: Built with a **Facade** entry point and **Factory Pattern** for easy extensibility (separation of configuration, execution, and scraping).
 
 ## Installation
 
@@ -15,7 +16,6 @@ Skyscraper is a Python-based flight scraper designed to search for flight prices
 
 - Python 3.10+
 - [Conda](https://docs.conda.io/en/latest/) (Recommended)
-- Google Chrome installed
 
 ### Setup
 
@@ -28,95 +28,70 @@ Skyscraper is a Python-based flight scraper designed to search for flight prices
    ```
 
 3. **Activate Environment**:
+
    ```bash
    conda activate skyscraper
    ```
 
-## Configuration
-
-1. **Environment Variables**:
-   Create a `.env` file (see `.env.example` if available, or create one):
-
-   ```bash
-   touch .env
-   ```
-
-2. **Edit `.env`**:
-   Open `.env` and add your Telegram Bot Token and Chat ID:
+4. **Environment Variables**:
+   Create a `.env` file with your Telegram credentials:
    ```ini
-   TELEGRAM_TOKEN=123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+   TELEGRAM_TOKEN=123456:ABC-DEF...
    CHAT_ID=123456789
    ```
 
 ## Usage
 
-Run the scraper using the `main.py` entry point. You must provide the origin, destination, and date.
+Run the scraper using the `main.py` entry point.
+
+### Recommended: SerpApi Mode (Stable)
+
+Run with your SerpApi key and a list of countries to check from:
 
 ```bash
-python main.py --origin London --destination "New York" --date 2026-02-01
+python main.py --origin MAD --destination BRU --date 2026-03-28 --serpapi-key "YOUR_SERPAPI_KEY" --country uk,us,es
+```
+
+- `--serpapi-key`: Your SerpApi API Key.
+- `--country`: Comma-separated list of country codes (e.g., `uk,us`) to simulate searching from those locations.
+- **Note**: This mode uses `deep_search=true` to ensure results match the Google Flights UI exactly.
+
+### Fallback: Browser Automation
+
+If you don't have a SerpApi key, you can use the legacy browser automation (requires ScraperAPI proxy for best results):
+
+```bash
+python main.py --origin MAD --destination BRU --date 2026-03-28 --scraperapi-key "YOUR_KEY" --headless
 ```
 
 ### Arguments
 
 - `--origin`: City name or 3-letter IATA code (e.g., "London", "LON").
 - `--destination`: City name or 3-letter IATA code (e.g., "New York", "NYC").
-- `--date`: Date of travel in YYYY-MM-DD format.
-- `--return-date`: (Optional) Return date in YYYY-MM-DD format for round trips.
-- `--headless`: (Optional) Run the browser in headless mode (no GUI).
-
-### ScraperAPI Integration
-
-You can use ScraperAPI proxy mode by providing your API key.
-
-```bash
-python main.py --origin LON --destination NYC --date 2026-03-01 --scraperapi-key "YOUR_API_KEY"
-```
-
-### Example with Return Date and Headless Mode
-
-```bash
-python main.py --origin London --destination "New York" --date 2026-02-01 --return-date 2026-02-15 --headless
-```
-
-## Automation (Crontab)
-
-To run the scraper automatically on a schedule (e.g., every 6 hours), you can use `cron`.
-
-1.  Open your crontab editor:
-
-    ```bash
-    crontab -e
-    ```
-
-2.  Add a line to schedule the script. The following example runs every 6 hours and logs output to `cron.log`:
-
-    ```bash
-    # Run every 6 hours (00:00, 06:00, 12:00, 18:00)
-    0 */6 * * * cd /home/kevinvanliebergen/git/skyscraper && conda run -n skyscraper python main.py --origin London --destination "New York" --date 2026-02-01 --return-date 2026-02-15 --headless --max-price 600 >> cron.log 2>&1
-    ```
-
-    **Important Notes:**
-    - **Absolute Paths**: Always use absolute paths for `cd`.
-    - **Conda Path**: Ensure `conda` is in your cron user's PATH, or use the full path to the conda executable (e.g., `/home/user/miniconda3/bin/conda`).
-    - **Display**: Since it runs headless, you generally don't need to set `DISPLAY`, but if you face issues, ensure `--headless` is used.
+- `--date`: Date of travel in `YYYY-MM-DD` format.
+- `--return-date`: (Optional) Return date in `YYYY-MM-DD` format.
+- `--max-price`: (Optional) Filter results above this price.
 
 ## Project Structure
 
 ```
 skyscraper/
 ├── config/             # Configuration loader
+├── core/               # Core Application Logic
+│   ├── application.py  # SkyscraperApp Facade
+│   ├── scraper_factory.py # Factory for creating scrapers
+│   ├── scraper_runner.py  # Execution engine (SRP compliant)
+│   ├── flight_controller.py # Logic controller
+│   └── result_aggregator.py # Deduplication logic
 ├── logger/             # Logging setup
-├── notifications/      # Notification services (Telegram)
-│   ├── formatters.py   # Message formatting
-│   └── telegram.py     # Telegram API integration
+├── notifications/      # Telegram integration
 ├── scraper/            # Scraper engine
-│   ├── platforms/      # Flight platform implementations (Google Flights, etc.)
-│   └── browser.py      # Browser automation manager
-├── utils/              # Utility helper functions
-│   └── locations.py    # City to IATA code conversion
-├── main.py             # CLI Entry point
-├── environment.yml     # Conda environment definition
-└── .env                # Secrets (GitIgnored)
+│   ├── platforms/      # Implementations (SerpApi, Google Flights)
+│   └── browser.py      # Legacy Browser automation
+├── utils/              # Helpers (Locations, Parsing)
+├── main.py             # Minimal entry point
+├── environment.yml     # Dependencies
+└── .env                # Secrets
 ```
 
 ## License
