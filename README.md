@@ -72,6 +72,10 @@ python main.py --origin MAD --destination BRU --date 2026-03-28 --scraperapi-key
 - `--return-date`: (Optional) Return date in `YYYY-MM-DD` format.
 - `--max-price`: (Optional) Filter results above this price.
 
+## Booking Tips
+
+💡 **Pro Tip**: If the scraper finds a cheaper price via a specific country source (e.g., `Found via: SerpApi (ES)`), you should **enable a VPN** set to that country (e.g., Spain) before visiting the airline's website or Google Flights. This ensures you can actually book the flight at the local price detected by the scraper.
+
 ## Project Structure
 
 ```
