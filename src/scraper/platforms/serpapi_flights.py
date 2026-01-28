@@ -25,17 +25,23 @@ class SerpApiFlights(FlightPlatform):
             "departure_id": origin,
             "arrival_id": destination,
             "outbound_date": date,
-            "currency": "EUR", # Defaulting to EUR as per previous context
+            "currency": "EUR", 
             "hl": "en",
             "gl": country_code,
             "api_key": self.api_key,
-            "deep_search": "true" # Requested by user for better results
+            "deep_search": "true" 
         }
         
         if return_date:
             params["return_date"] = return_date
-            # Google Flights engine often requires type=1 (Round trip) or type=2 (One way) implicitly via dates
-            # deep_search handles most logic.
+        else:
+            # Type 2 = One Way (Required if no return_date)
+            params["type"] = "2"
+            
+        # Mask API key for logging safety
+        log_params = params.copy()
+        log_params["api_key"] = "HIDDEN"
+        logger.info(f"SerpApi Request Parameters: {log_params}")
 
         try:
             search = GoogleSearch(params)
