@@ -1,7 +1,7 @@
 import logging
 import sys
 
-def setup_logger(name="skyscraper", level=logging.INFO):
+def setup_logger(name="skyscraper", level=logging.DEBUG):
     """
     Sets up a logger with a standard format.
     """

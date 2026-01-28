@@ -18,6 +18,7 @@ class PersistenceService:
         """
         new_results = []
         for flight in results:
+            logger.debug(f"Checking flight: {flight.get('airline')} {flight.get('departure_time')} {flight.get('price')}")
             if self.db.is_flight_new(flight, args.origin, args.destination, args.date, args.return_date):
                 new_results.append(flight)
                 # Save immediately to ensure persistence

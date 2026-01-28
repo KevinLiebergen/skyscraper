@@ -1,5 +1,12 @@
 
 import argparse
+from datetime import datetime
+
+def valid_date(s):
+    try:
+        return datetime.strptime(s, "%Y-%m-%d").strftime("%Y-%m-%d")
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"Not a valid date: '{s}'. Expected format: YYYY-MM-DD")
 
 def parse_arguments():
     """
@@ -8,11 +15,11 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Scrape flight prices and notify via Telegram.")
     parser.add_argument("--origin", required=True, help="Flight origin (e.g., LON)")
     parser.add_argument("--destination", required=True, help="Flight destination (e.g., NYC)")
-    parser.add_argument("--date", required=True, help="Flight date (YYYY-MM-DD)")
-    parser.add_argument("--return-date", help="Return flight date (YYYY-MM-DD). If omitted, searches one-way.")
+    parser.add_argument("--date", required=True, type=valid_date, help="Flight date (YYYY-MM-DD)")
+    parser.add_argument("--return-date", type=valid_date, help="Return flight date (YYYY-MM-DD). If omitted, searches one-way.")
     parser.add_argument("--max-price", type=float, help="Maximum price filter (e.g., 500)")
-    parser.add_argument("--headless", action="store_true", help="Run browser in headless mode")
-    parser.add_argument("--brightdata-proxy", help="BrightData base proxy URL (e.g., http://brd-customer-X-zone-Y:pass@host:port)")
-    parser.add_argument("--countries", help="Comma-separated list of country codes for BrightData (e.g., us,uk,de)")
-
+    parser.add_argument("--headless", action="store_true", help="Run browser in headless mode (unused for SerpApi)")
+    parser.add_argument("--serpapi-key", help="SerpApi Key")
+    parser.add_argument("--country", help="Country code(s) for search location (e.g., us, uk). Comma-separated.")
+    
     return parser.parse_args()

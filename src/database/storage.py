@@ -105,31 +105,32 @@ class DatabaseManager:
         
         if not row:
             # Flight not seen before -> Send
+            logger.info(f"NEW FLIGHT: {flight_data.get('airline')} {flight_data.get('departure_time')} - No previous record found.")
             return True
             
         last_price = row[0]
         
         if last_price is None:
             # Previously seen but no numeric price stored -> Treat as new/update -> Send
+            logger.info("UPDATE FLIGHT: Previous record had no price.")
             return True
             
         if current_price is None:
-            # Can't parse current price -> Default to generic deduplication (if text matches)
-            # But here we assume if we can't parse, we might as well send if it's not exact match?
-            # Let's fallback to False to be safe (no spam) or True?
-            # User said: "if results are duplicated... do not send".
-            # If we can't parse price, we rely on exact flight details match which we just found.
-            # Let's return False to avoid spamming "N/A" prices if they persist.
+            # Can't parse current price
+            logger.info("SKIP FLIGHT: Current price could not be parsed.")
             return False
 
         if current_price < last_price:
             # Price dropped! -> Send
+            logger.info(f"PRICE DROP: {current_price} < {last_price}")
             return True
         elif current_price > last_price:
-            # Price increased -> Don't send (User requirement implied)
+            # Price increased -> Don't send
+            logger.info(f"PRICE INCREASE: {current_price} > {last_price} - Suppressing.")
             return False
             
         # Price is same -> Don't send
+        logger.info(f"SAME FLIGHT: Price {current_price} is unchanged.")
         return False
 
     def save_flight(self, flight_data: dict, origin, destination, date, return_date):

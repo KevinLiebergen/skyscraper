@@ -1,7 +1,7 @@
-
 import logging
 import re
 import os
+import uuid
 
 logger = logging.getLogger("skyscraper.core.proxy")
 
@@ -19,38 +19,13 @@ class ProxyManager:
         """
         proxies = [None]
 
-        # 1. BrightData Dynamic Generation
-        if args.brightdata_proxy and args.countries:
-            try:
-                base_proxy = args.brightdata_proxy.strip()
-                countries = [c.strip().lower() for c in args.countries.split(',') if c.strip()]
-                
-                # Regex to capture parts: (scheme://)(user)(:pass@host:port)
-                match = re.match(r"(https?://)([^:]+)(:.+)", base_proxy)
-                
-                if match and countries:
-                    scheme = match.group(1)
-                    user = match.group(2)
-                    rest = match.group(3)
-                    
-                    generated_proxies = []
-                    for country in countries:
-                        # BrightData format: user-country-code
-                        new_user = f"{user}-country-{country}"
-                        new_proxy = f"{scheme}{new_user}{rest}"
-                        generated_proxies.append(new_proxy)
-                    
-                    if generated_proxies:
-                        logger.info(f"Generated {len(generated_proxies)} BrightData proxies for countries: {', '.join(countries)}")
-                        return generated_proxies
-                else:
-                     logger.error("Invalid BrightData proxy format. Use http://brd-customer-ID-zone-ZONE:PASSWORD@brd.superproxy.io:33335")
-            except Exception as e:
-                 logger.error(f"Failed to generate BrightData proxies: {e}")
-
+        if hasattr(args, 'scraperapi_key') and args.scraperapi_key:
+             # Legacy/Fallback if argument re-added, but for now strict SerpApi
+             pass
+        
         # 2. Return default (Direct) if no proxies generated
         if proxies == [None]:
-            logger.info("No BrightData proxies configured. Using direct connection.")
+            logger.info("No proxies configured. Using direct connection.")
             
         return proxies
 
@@ -61,9 +36,11 @@ class ProxyManager:
         if not proxy:
             return "Direct"
             
-        if args.brightdata_proxy and args.countries:
-             c_match = re.search(r'-country-([a-z]{2})', proxy)
-             if c_match:
-                 return f"BrightData ({c_match.group(1).upper()})"
+        if args.scraperapi_key and "scraperapi" in proxy:
+            # Extract country code if present
+            c_match = re.search(r'country_code=([a-z]{2})', proxy)
+            if c_match:
+                return f"ScraperAPI ({c_match.group(1).upper()})"
+            return "ScraperAPI"
         
         return proxy

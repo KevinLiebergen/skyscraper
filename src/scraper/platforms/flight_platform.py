@@ -5,8 +5,11 @@ logger = logging.getLogger("skyscraper.platforms")
 
 class FlightPlatform(ABC):
     def __init__(self, browser_manager):
-        self.browser = browser_manager
-        self.driver = browser_manager.get_driver()
+        self.browser_manager = browser_manager
+        if browser_manager:
+            self.page = browser_manager.get_page()
+        else:
+            self.page = None
 
     @abstractmethod
     def search_flights(self, origin, destination, date, return_date=None):

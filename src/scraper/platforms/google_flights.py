@@ -16,53 +16,34 @@ class GoogleFlightsScraper(FlightPlatform):
         """
         Searches Google Flights using helper modules.
         """
-        url = "https://www.google.com/travel/flights"
-        self.browser.get_page(url)
+        search_url = self.interactions.construct_search_url(origin, destination, date, return_date)
         
+        # Navigate
+        self.browser_manager.navigate(search_url)
         self.interactions.handle_cookie_consent()
         
-        logger.info(f"Searching flights from {origin} to {destination} on {date} (Return: {return_date})")
-        
-        search_url = self.interactions.construct_search_url(origin, destination, date, return_date)
-        self.browser.get_page(search_url)
-        
-        logger.info("Waiting for results to load...")
-        self.browser.random_sleep(3, 5)
-        
-        flights_found = []
-        
+        # Wait for results to load
         try:
-            base_search_url = self.driver.current_url
-            num_cards = 5
-            
-            for i in range(num_cards):
-                try:
-                    cards = self.driver.find_elements(By.CSS_SELECTOR, "li.pIav2d")
-                    if i >= len(cards):
-                        break
-                        
-                    card = cards[i]
-                    
-                    # Parse data
-                    data = self.parser.parse_flight_card(card)
-                    
-                    # Capture deep link
-                    data['flight_url'] = self.interactions.capture_flight_url(card, base_search_url)
+            # Wait for either the results list or the "no flights found" message
+            self.page.wait_for_selector(".pIav2d", timeout=30000)
+        except:
+             logger.warning("Timeout waiting for flight results.")
+             return [], search_url
 
-                    flights_found.append(data)
-                    
-                except Exception as e:
-                    logger.warning(f"Failed to process flight card {i}: {e}")
-                    # Try to reset state
-                    try:
-                        self.driver.get(base_search_url)
-                        self.browser.random_sleep(2, 3)
-                    except:
-                        pass
-                    continue
-            
-            return flights_found, base_search_url
-            
-        except Exception as e:
-            logger.error(f"Error during scraping: {e}")
-            return [], None
+        # Check for results
+        # Limit to 5 results as requested
+        flight_cards = self.page.locator(".pIav2d").all()[:5]
+        logger.info(f"Found {len(flight_cards)} potential flight cards (processing top 5).")
+
+        results = []
+        for index, card in enumerate(flight_cards):
+             # Extract details using Parser (passing the locator)
+             flight_data = self.parser.parse_flight_card(card)
+             
+             # Get Deep Link
+             flight_url = self.interactions.capture_flight_url(index, search_url)
+             flight_data['url'] = flight_url
+             
+             results.append(flight_data)
+             
+        return results, search_url
