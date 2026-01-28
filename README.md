@@ -48,10 +48,13 @@ Run the scraper using the `main.py` entry point.
 
 ### Recommended: SerpApi Mode
 
-Run with your SerpApi key and a list of countries to check from:
+1.  **Get an API Key**: Sign up at [SerpApi](https://serpapi.com/) to get your free API key.
+2.  **Run the Scraper**:
+
+You can use full city names (e.g., "Madrid", "Brussels") or IATA codes.
 
 ```bash
-python main.py --origin MAD --destination BRU --date 2026-03-28 --serpapi-key "YOUR_SERPAPI_KEY" --country uk,us,es
+python main.py --origin "Madrid" --destination "Brussels" --date 2026-03-28 --serpapi-key "YOUR_SERPAPI_KEY" --country uk,us,es
 ```
 
 - `--serpapi-key`: Your SerpApi API Key (Required for this mode).
@@ -62,7 +65,7 @@ python main.py --origin MAD --destination BRU --date 2026-03-28 --serpapi-key "Y
 If you **do not provide** a `--serpapi-key`, the script will default to opening a local Google Chrome instance to scrape the data directly.
 
 ```bash
-python main.py --origin MAD --destination BRU --date 2026-03-28 --headless
+python main.py --origin "Madrid" --destination "Brussels" --date 2026-03-28 --headless
 ```
 
 - `--headless`: Run browser in background (optional).
