@@ -18,7 +18,8 @@ def parse_arguments():
     parser.add_argument("--date", required=True, type=valid_date, help="Flight date (YYYY-MM-DD)")
     parser.add_argument("--return-date", type=valid_date, help="Return flight date (YYYY-MM-DD). If omitted, searches one-way.")
     parser.add_argument("--max-price", type=float, help="Maximum price filter (e.g., 500)")
-    parser.add_argument("--serpapi-key", required=True, help="SerpApi Key (Required)")
+    parser.add_argument("--headless", action="store_true", help="Run browser in headless mode (if not using SerpApi)")
+    parser.add_argument("--serpapi-key", help="SerpApi Key (Optional)")
     parser.add_argument("--country", help="Country code(s) for search location (e.g., us, uk). Comma-separated.")
     
     return parser.parse_args()

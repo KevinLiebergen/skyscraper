@@ -1,5 +1,9 @@
+
 import logging
 from scraper.platforms.serpapi_flights import SerpApiFlights
+from scraper.browser import BrowserManager
+from scraper.platforms.google_flights import GoogleFlightsScraper
+from core.proxy_manager import ProxyManager
 
 logger = logging.getLogger("skyscraper.core.factory")
 
@@ -9,7 +13,7 @@ class ScraperFactory:
     Returns a list of tuples: (scraper_instance, context_info_dict)
     """
     def __init__(self):
-        pass
+        self.proxy_manager = ProxyManager()
 
     def create_scrapers(self, args):
         """
@@ -19,23 +23,33 @@ class ScraperFactory:
         """
         scrapers = []
 
-        # Enforce SerpApi Key
-        if not args.serpapi_key:
-            # Check environment variable potentially, but CLI arg is preferred
-            # If mandatory, we should raise or return empty with warning
-            logger.error("No SerpApi Key provided. Use --serpapi-key.")
-            raise ValueError("SerpApi Key is required.")
+        # 1. SerpApi Path (Preferred)
+        if args.serpapi_key:
+            return self._create_serpapi_scrapers(args)
 
-        # Handle multiple countries
-        countries = self._get_countries(args)
+        # 2. Browser Path (Fallback)
+        logger.info("No SerpApi key provided. Falling back to Browser Automation.")
         
+        # Get proxies (or local direct)
+        proxies = self.proxy_manager.get_proxies(args)
+        
+        for i, proxy in enumerate(proxies):
+            source_label = self.proxy_manager.get_source_label(proxy, args)
+            logger.debug(f"Creating Browser scraper for {source_label}")
+            
+            scraper = LazyBrowserScraper(args.headless, proxy)
+            scrapers.append((scraper, {"source": source_label}))
+
+        return scrapers
+
+    def _create_serpapi_scrapers(self, args):
+        scrapers = []
+        countries = self._get_countries(args)
         for country in countries:
             source_label = f"SerpApi ({country.upper()})"
             logger.debug(f"Creating SerpApi scraper for {country}")
-            
             scraper = ConfiguredSerpApi(args.serpapi_key, country)
             scrapers.append((scraper, {"source": source_label}))
-            
         return scrapers
 
     def _get_countries(self, args):
@@ -51,3 +65,19 @@ class ConfiguredSerpApi:
         
     def search_flights(self, origin, destination, date, return_date):
         return self.delegate.search_flights(origin, destination, date, return_date, country_code=self.country)
+
+class LazyBrowserScraper:
+    """Delays browser creation until search is called."""
+    def __init__(self, headless, proxy):
+        self.headless = headless
+        self.proxy = proxy
+        self.browser_manager = None
+        
+    def search_flights(self, origin, destination, date, return_date):
+        try:
+            self.browser_manager = BrowserManager(headless=self.headless, proxy=self.proxy)
+            scraper = GoogleFlightsScraper(self.browser_manager)
+            return scraper.search_flights(origin, destination, date, return_date)
+        finally:
+            if self.browser_manager:
+                self.browser_manager.close()
