@@ -57,7 +57,7 @@ class GoogleInteractions:
             
             card = cards[index]
             # Scroll into view if needed
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", card)
+            self.driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", card)
             time.sleep(1) # Small pause for scroll
             
             card.click()

@@ -82,6 +82,7 @@ class FlightLocationHandler:
                 "san francisco": "SFO", # SFO is often used for the area too
                 "los angeles": "LAX", # LAX is often used
                 "chicago": "CHI",
+                "lima": "LIM",
             }
             
             if city_name.lower() in MAJOR_CITIES:
