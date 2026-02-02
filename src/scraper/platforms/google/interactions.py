@@ -1,5 +1,9 @@
 
 import logging
+import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 logger = logging.getLogger("skyscraper.platforms.google.interactions")
 
@@ -9,7 +13,7 @@ class GoogleInteractions:
     """
     def __init__(self, browser_manager):
         self.browser_manager = browser_manager
-        self.page = browser_manager.get_page()
+        self.driver = browser_manager.get_driver()
 
     def handle_cookie_consent(self):
         """
@@ -17,11 +21,13 @@ class GoogleInteractions:
         """
         try:
             # Check for button with text "Accept all"
-            accept_button = self.page.get_by_role("button", name="Accept all")
-            if accept_button.is_visible(timeout=3000):
-                accept_button.click()
-                logger.info("Clicked cookie consent.")
-                self.browser_manager.random_sleep(1, 2)
+            # Using xpath to find by text as it's most robust for this specific case
+            accept_button = WebDriverWait(self.driver, 3).until(
+                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Accept all')]"))
+            )
+            accept_button.click()
+            logger.info("Clicked cookie consent.")
+            self.browser_manager.random_sleep(1, 2)
         except:
             pass 
 
@@ -43,26 +49,32 @@ class GoogleInteractions:
         """
         try:
             # Re-locate the card list and get the specific index
-            cards = self.page.locator(".pIav2d").all()
+            # Selenium approach: Find all elements again
+            cards = self.driver.find_elements(By.CSS_SELECTOR, ".pIav2d")
+            
             if index >= len(cards):
                 return base_search_url
             
             card = cards[index]
+            # Scroll into view if needed
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", card)
+            time.sleep(1) # Small pause for scroll
+            
             card.click()
             self.browser_manager.random_sleep(2, 3)
             
             # Wait for URL to change or just capture current
-            flight_url = self.page.url
+            flight_url = self.driver.current_url
             
             # Navigate back to list to reset state
-            self.page.goto(base_search_url)
+            self.driver.get(base_search_url)
             self.browser_manager.random_sleep(2, 3)
             
             return flight_url
         except Exception as e:
             logger.warning(f"Failed to capture flight URL: {e}")
             # Ensure return to base url if we are lost
-            if self.page.url != base_search_url:
-                 self.page.goto(base_search_url)
+            if self.driver.current_url != base_search_url:
+                 self.driver.get(base_search_url)
                  self.browser_manager.random_sleep(2, 3)
             return base_search_url

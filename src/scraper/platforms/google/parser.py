@@ -1,5 +1,6 @@
 
 import logging
+from selenium.webdriver.common.by import By
 from utils.parsing import convert_to_24h
 
 logger = logging.getLogger("skyscraper.platforms.google.parser")
@@ -8,34 +9,39 @@ class GoogleParser:
     """
     Handles parsing of Google Flights HTML elements.
     """
-    def parse_flight_card(self, card_locator):
+    def parse_flight_card(self, card_element):
         """
-        Extracts details from a flight card element (Playwright locator).
+        Extracts details from a flight card element (Selenium WebElement).
         """
         data = {}
         
         # Price
         try:
-            data['price'] = card_locator.locator(".FpEdX span").inner_text()
+            data['price'] = card_element.find_element(By.CSS_SELECTOR, ".FpEdX span").text
         except:
             data['price'] = "N/A"
             
         # Airline
         try:
-            # inner_text of the first matching span
-            data['airline'] = card_locator.locator(".sSHqwe.tPgKwe.ogfYpf span").first.inner_text()
+            # text of the first matching span
+            # Using find_elements to simulate .first and avoid error if not found immediately
+            airlines = card_element.find_elements(By.CSS_SELECTOR, ".sSHqwe.tPgKwe.ogfYpf span")
+            if airlines:
+                data['airline'] = airlines[0].text
+            else:
+                data['airline'] = "Unknown Airline"
         except:
                 data['airline'] = "Unknown Airline"
 
         # Duration
         try:
-            data['duration'] = card_locator.locator(".gvkrdb").inner_text()
+            data['duration'] = card_element.find_element(By.CSS_SELECTOR, ".gvkrdb").text
         except:
             data['duration'] = "N/A"
         
         # Departure and Arrival Times
         try:
-            times_text = card_locator.locator(".YMlIz").inner_text()
+            times_text = card_element.find_element(By.CSS_SELECTOR, ".YMlIz").text
             
             if "–" in times_text:
                 dep, arr = times_text.split("–", 1)
@@ -50,16 +56,16 @@ class GoogleParser:
 
         # Stops
         try:
-            data['stops'] = card_locator.locator(".EfT7Ae span").inner_text()
+            data['stops'] = card_element.find_element(By.CSS_SELECTOR, ".EfT7Ae span").text
         except:
             data['stops'] = "N/A"
             
         # Layover
         try:
-            # Check if element exists before getting text to avoid error on cleaner flow
-            layover_loc = card_locator.locator(".BbR8Ec .sSHqwe")
-            if layover_loc.count() > 0:
-                 data['layover'] = layover_loc.inner_text()
+            # Check if element exists
+            layovers = card_element.find_elements(By.CSS_SELECTOR, ".BbR8Ec .sSHqwe")
+            if layovers:
+                 data['layover'] = layovers[0].text
             else:
                  data['layover'] = None
         except:

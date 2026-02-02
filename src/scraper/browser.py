@@ -1,97 +1,61 @@
 import logging
 import random
 import time
-from playwright.sync_api import sync_playwright
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 
 logger = logging.getLogger("skyscraper.browser")
 
 class BrowserManager:
     def __init__(self, headless=False, proxy=None):
-        self.playwright = sync_playwright().start()
-        self.browser = self._setup_browser(headless, proxy)
-        self.context = self._setup_context(proxy)
-        self.page = self.context.new_page()
-        self._setup_stealth(self.page)
+        self.driver = self._setup_driver(headless, proxy)
+        self._setup_stealth()
 
-    def _setup_browser(self, headless, proxy):
-        logger.info(f"Initializing Playwright Browser (Headless: {headless})")
-        # Proxy is set at context level usually, but can be set at launch if global
-        # We will handle proxy in context for flexibility, or launch if needed for auth
+    def _setup_driver(self, headless, proxy):
+        logger.info(f"Initializing Selenium Driver (Headless: {headless})")
         
-        # Note: Playwright handles proxy auth in launch() or context()
-        # For authenticated proxy, we pass it to launch or new_context
+        options = Options()
+        if headless:
+            options.add_argument("--headless=new")
         
-        launch_args = {
-            "headless": headless,
-            "args": [
-                "--start-maximized",
-                "--disable-blink-features=AutomationControlled"
-            ]
-        }
+        options.add_argument("--start-maximized")
+        options.add_argument("--disable-blink-features=AutomationControlled")
+        options.add_argument("user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
         
+        # Additional arguments to be less bot-like
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--disable-infobars")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+
         if proxy:
-            # Parse proxy string to check for auth
-            # Format: scheme://user:pass@host:port
-            server = proxy
-            username = None
-            password = None
-            
-            if "@" in proxy:
-                from urllib.parse import urlparse
-                parsed = urlparse(proxy)
-                username = parsed.username
-                password = parsed.password
-                # Reconstruct server without auth
-                server = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"
-                
-                launch_args["proxy"] = {
-                    "server": server,
-                    "username": username,
-                    "password": password
-                }
-                logger.info(f"Setting up browser with authenticated proxy: {server}")
-            else:
-                 launch_args["proxy"] = {"server": proxy}
-                 logger.info(f"Setting up browser with proxy: {proxy}")
+             options.add_argument(f'--proxy-server={proxy}')
+             logger.info(f"Setting up browser with proxy: {proxy}")
 
-        return self.playwright.chromium.launch(**launch_args)
+        service = Service(ChromeDriverManager().install())
+        driver = webdriver.Chrome(service=service, options=options)
+        return driver
 
-    def _setup_context(self, proxy):
-        # Viewport null to use window size
-        context = self.browser.new_context(
-            viewport={"width": 1920, "height": 1080}, 
-            user_agent="Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            ignore_https_errors=True
-        )
+    def _setup_stealth(self):
+        # Apply stealth settings
+        try:
+            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+        except Exception as e:
+            logger.warning(f"Failed to apply stealth scripts: {e}")
+
+    def get_driver(self):
+        return self.driver
         
-        # Bandwidth Optimization: Block heavy resources
-        def route_handler(route):
-            if route.request.resource_type in ["image", "media", "font", "stylesheet"]:
-                route.abort()
-            else:
-                route.continue_()
-                
-        context.route("**/*", route_handler)
-        
-        return context
-
-    def _setup_stealth(self, page):
-        page.add_init_script("""
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            })
-        """)
-
     def get_page(self):
-        return self.page
+        # Compatibility alias if needed, but prefer get_driver
+        return self.driver
 
     def close(self):
-        if self.context:
-            self.context.close()
-        if self.browser:
-            self.browser.close()
-        if self.playwright:
-            self.playwright.stop()
+        if self.driver:
+            self.driver.quit()
         logger.info("Browser closed.")
 
     def random_sleep(self, min_seconds=2, max_seconds=5):
@@ -104,8 +68,8 @@ class BrowserManager:
         for attempt in range(retries):
             logger.info(f"Navigating to {url} (Attempt {attempt+1}/{retries})")
             try:
-                # ScraperAPI can be slow, so we increase timeout to 60s
-                self.page.goto(url, timeout=60000)
+                self.driver.set_page_load_timeout(60)
+                self.driver.get(url)
             except Exception as e:
                 logger.warning(f"Navigation error: {e}")
                 if attempt < retries - 1:
@@ -116,7 +80,7 @@ class BrowserManager:
 
             # Check for ScraperAPI specific error content
             try:
-                content = self.page.content().lower()
+                content = self.driver.page_source.lower()
                 if "too many simultaneous requests" in content:
                     logger.warning("ScraperAPI Error: Too many simultaneous requests. Waiting 15s to drain connections...")
                     time.sleep(15)

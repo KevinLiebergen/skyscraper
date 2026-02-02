@@ -1,6 +1,6 @@
 # Skyscraper - Flight Scraper
 
-Skyscraper is a Python-based flight scraper designed to search for flight prices on Google Flights and notify users via Telegram. It supports both robust server-side scraping via **SerpApi** (recommended) and client-side browser automation.
+Skyscraper is a Python-based flight scraper designed to search for flight prices on Google Flights and notify users via Telegram. It supports both robust server-side scraping via **SerpApi** (recommended) and client-side browser automation (via **Selenium**).
 
 ## Features
 
