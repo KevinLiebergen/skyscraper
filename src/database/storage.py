@@ -20,8 +20,9 @@ logger = logging.getLogger("skyscraper.database")
 class DatabaseManager:
     def __init__(self, db_path=None):
         if db_path is None:
-            # Default to data/skyscraper.db relative to CWD
-            self.db_path = os.path.join("data", "skyscraper.db")
+            # Default to data/skyscraper.db relative to repository root
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+            self.db_path = os.path.join(base_dir, "data", "skyscraper.db")
         else:
             self.db_path = db_path
             
