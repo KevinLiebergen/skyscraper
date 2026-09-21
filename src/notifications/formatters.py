@@ -8,7 +8,7 @@ def format_flight_results(results: list, origin: str, destination: str, date: st
     
     body = ""
     for i, flight in enumerate(results, 1):
-        body += _format_flight_option(i, flight, return_date)
+        body += _format_flight_option(i, flight, date, return_date)
         body += "\n"
 
     return header + body
@@ -19,6 +19,13 @@ def _format_date_with_day(date_str):
         return f"{date_str} ({dt.strftime('%A')})"
     except ValueError:
         return date_str
+
+def _format_datetime_with_day(date_str, time_str):
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d")
+        return f"{date_str} {time_str} ({dt.strftime('%A')})"
+    except (ValueError, TypeError):
+        return time_str
 
 def _format_header(origin, destination, date, return_date):
     formatted_date = _format_date_with_day(date)
@@ -32,7 +39,7 @@ def _format_header(origin, destination, date, return_date):
     header += "\n\n"
     return header
 
-def _format_flight_option(index, flight, return_date):
+def _format_flight_option(index, flight, date, return_date):
     price = flight.get('price', 'N/A')
     airline = flight.get('airline', 'Unknown')
     duration = flight.get('duration', 'N/A')
@@ -40,14 +47,14 @@ def _format_flight_option(index, flight, return_date):
     arrival = flight.get('arrival_time', 'N/A')
     stops = flight.get('stops', 'N/A')
     layover = flight.get('layover')
-    
+
     body = f"🔹 *Option {index}*\n"
     if return_date:
         body += f"   🛫 *Outbound Flight*\n"
     body += f"   💰 {'Total Price (Round Trip)' if return_date else 'Price'}: {price}\n"
     body += f"   🏢 Airline: {airline}\n"
-    body += f"   🛫 Depart: {departure}\n"
-    body += f"   🛬 Arrive: {arrival}\n"
+    body += f"   🛫 Depart: {_format_datetime_with_day(date, departure)}\n"
+    body += f"   🛬 Arrive: {_format_datetime_with_day(date, arrival)}\n"
     body += f"   ⏱️ Duration: {duration}\n"
     
     if stops and ("Nonstop" in stops or "0" in stops):
