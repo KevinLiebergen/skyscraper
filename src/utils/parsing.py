@@ -39,6 +39,23 @@ def parse_price(price_str: str) -> float:
     except:
         return None
 
+def parse_stops(stops_str: str) -> int:
+    """
+    Parses a stops string (e.g., "Nonstop", "1 Stop", "2 Stops") into an integer.
+    Returns None if it can't be determined.
+    """
+    if not stops_str or stops_str == "N/A":
+        return None
+
+    if "Nonstop" in stops_str:
+        return 0
+
+    match = re.search(r'\d+', stops_str)
+    if match:
+        return int(match.group())
+
+    return None
+
 def convert_to_24h(time_str: str) -> str:
     """
     Converts 12-hour AM/PM time string to 24-hour format.
@@ -51,7 +68,11 @@ def convert_to_24h(time_str: str) -> str:
         return time_str
 
     time_str = time_str.strip()
-    
+
+    # Strip a leading "YYYY-MM-DD " date prefix (e.g. SerpApi's "2026-10-30 12:25")
+    # since the date is already shown separately in the notification.
+    time_str = re.sub(r'^\d{4}-\d{2}-\d{2}\s+', '', time_str).strip()
+
     # Check if already in 24h-like format (HH:MM without AM/PM)
     if re.match(r'^\d{1,2}:\d{2}$', time_str):
         return time_str
